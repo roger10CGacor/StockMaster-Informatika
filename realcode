@@ -1,0 +1,27 @@
+item_stock = int(input("Input Total Item Variation: "))
+order_more = ""
+storage_status = "safe"
+
+for i in range(item_stock):
+    print("--- New Item ---")
+    item_name = input("Input Item Name: ")
+    item_category = input("Input Item Category: ")
+    item_quantity = int(input("Input Item Quantity: "))
+    item_status = input("Input Item Status (OK/Broken): ")
+
+    if item_quantity < 5:
+        order_more = order_more + item_name + ", "
+
+    if item_status == "Broken":
+        print("Item {item_name} is broken and needs to be repaired.")
+        storage_status = "broken"
+        break
+
+    if item_category == "promotion":
+        continue
+
+print("Final Checking:")
+if storage_status == "broken":
+    print("Storage is broken, checking is stopped. Please repair it before proceeding.")
+else:
+    print("Items that needs to be ordered: " + order_more)

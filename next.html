@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StockMaster | Next</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #eff6ff;
+        color: #0f172a;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 2rem 2.25rem;
+        max-width: 640px;
+        box-shadow: 0 20px 50px rgba(30, 64, 175, 0.12);
+        text-align: center;
+      }
+
+      h1 {
+        margin-bottom: 0.75rem;
+      }
+
+      p {
+        line-height: 1.7;
+      }
+
+      .intro {
+        margin-bottom: 1rem;
+        color: #334155;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+        text-align: left;
+      }
+
+      .field-row {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .field-row label {
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .field-row input,
+      .field-row select {
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        font-size: 1rem;
+        font-family: inherit;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 0.9rem 1.4rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .primary-btn {
+        background: #1d4ed8;
+        color: #fff;
+      }
+
+      .secondary-btn {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+
+      .result-box {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 16px;
+        background: #f8fafc;
+        text-align: left;
+        border: 1px solid #cbd5e1;
+      }
+
+      .result-box h2 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+      }
+
+      .result-box p {
+        margin: 0.4rem 0;
+      }
+
+      .warning {
+        color: #b45309;
+      }
+
+      .danger {
+        color: #b91c1c;
+      }
+
+      .back {
+        display: inline-block;
+        margin-top: 1rem;
+        color: #1d4ed8;
+        font-weight: 700;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Welcome to StockMaster</h1>
+      <p class="intro">Enter the number of items you want to check, then fill in each item’s details to see what needs ordering or repair.</p>
+
+      <div class="form-grid">
+        <div class="field-row">
+          <label for="itemCount">Input Total Item Variation</label>
+          <input type="number" id="itemCount" min="1" value="1" />
+        </div>
+
+        <div class="actions">
+          <button type="button" id="generateBtn" class="primary-btn">Generate Item Fields</button>
+          <button type="button" id="runBtn" class="secondary-btn">Run Stock Check</button>
+        </div>
+
+        <div id="itemFields"></div>
+
+        <div class="result-box" id="resultBox" hidden>
+          <h2>Stock Check Result</h2>
+          <p id="resultText"></p>
+          <p id="statusText"></p>
+        </div>
+      </div>
+
+      <a class="back" href="index.html">← Back to home</a>
+    </main>
+
+    <script>
+      const itemCountInput = document.getElementById('itemCount');
+      const itemFields = document.getElementById('itemFields');
+      const resultBox = document.getElementById('resultBox');
+      const resultText = document.getElementById('resultText');
+      const statusText = document.getElementById('statusText');
+      const generateBtn = document.getElementById('generateBtn');
+      const runBtn = document.getElementById('runBtn');
+
+      function createItemField(index) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'field-row';
+        wrapper.style.padding = '1rem';
+        wrapper.style.border = '1px solid #cbd5e1';
+        wrapper.style.borderRadius = '16px';
+        wrapper.style.background = '#f8fafc';
+
+        wrapper.innerHTML = `
+          <label>Item ${index}</label>
+          <input type="text" data-role="item-name" placeholder="Input Item Name" required>
+          <select data-role="item-category">
+            <option value="regular">regular</option>
+            <option value="promotion">promotion</option>
+          </select>
+          <input type="number" data-role="item-quantity" placeholder="Input Item Quantity" min="0" required>
+          <select data-role="item-status">
+            <option value="OK">OK</option>
+            <option value="Broken">Broken</option>
+          </select>
+        `;
+
+        return wrapper;
+      }
+
+      function renderFields() {
+        const count = Math.max(1, parseInt(itemCountInput.value, 10) || 1);
+        itemFields.innerHTML = '';
+
+        for (let i = 1; i <= count; i++) {
+          itemFields.appendChild(createItemField(i));
+        }
+
+        resultBox.hidden = true;
+      }
+
+      generateBtn.addEventListener('click', renderFields);
+
+      runBtn.addEventListener('click', () => {
+        const itemInputs = itemFields.querySelectorAll('.field-row');
+        const neededOrder = [];
+        let storageStatus = 'safe';
+        let brokenItem = '';
+
+        itemInputs.forEach((field) => {
+          const itemName = field.querySelector('[data-role="item-name"]').value.trim();
+          const itemCategory = field.querySelector('[data-role="item-category"]').value;
+          const itemQuantity = Number(field.querySelector('[data-role="item-quantity"]').value);
+          const itemStatus = field.querySelector('[data-role="item-status"]').value;
+
+          if (!itemName) {
+            return;
+          }
+
+          if (itemCategory === 'promotion') {
+            return;
+          }
+
+          if (itemQuantity < 5) {
+            neededOrder.push(itemName);
+          }
+
+          if (itemStatus === 'Broken') {
+            brokenItem = itemName;
+            storageStatus = 'broken';
+            return;
+          }
+        });
+
+        resultBox.hidden = false;
+
+        if (storageStatus === 'broken') {
+          resultText.textContent = `Item ${brokenItem} is broken and needs to be repaired.`;
+          statusText.textContent = 'Storage is broken, checking is stopped. Please repair it before proceeding.';
+          statusText.className = 'danger';
+          return;
+        }
+
+        if (neededOrder.length > 0) {
+          resultText.textContent = `Items that need to be ordered: ${neededOrder.join(', ')}`;
+          statusText.textContent = 'All checked items are currently safe to use.';
+          statusText.className = 'warning';
+          return;
+        }
+
+        resultText.textContent = 'No items need to be ordered.';
+        statusText.textContent = 'All checked items are currently safe to use.';
+        statusText.className = '';
+      });
+
+      renderFields();
+    </script>
+  </body>
+</html>
